@@ -1,0 +1,14 @@
+{
+  "name": "schedule-emails-sheets",
+  "version": "1.0.0",
+  "description": "Automate email sending & scheduling on google sheets",
+  "main": "Code.ts",
+  "author": "Abubakr Muhammad <realchampiontheno1@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/google-apps-script": "^1.0.54"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.1"
+  }
+}
