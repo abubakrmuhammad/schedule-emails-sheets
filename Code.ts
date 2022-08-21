@@ -176,13 +176,11 @@ class Controller {
       attachments: templateData.attachments as any,
     });
 
-    this.sheet
-      .getRange(row.rowNumber, this.columnNumbers.emailStatus)
-      .setValue(EmailStatus.Sent);
+    const updatedData = [[EmailStatus.Sent, new Date(), '']];
 
     this.sheet
-      .getRange(row.rowNumber, this.columnNumbers.scheduleOrSent)
-      .setValue(new Date());
+      .getRange(row.rowNumber, this.columnNumbers.emailStatus, 1, 3)
+      .setValues(updatedData);
   }
 
   protected fillInDraftTemplatesFromData() {
