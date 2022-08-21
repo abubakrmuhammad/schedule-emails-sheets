@@ -6,7 +6,7 @@ const FIRST_NAME_COL_NAME = 'First Name';
 const LAST_NAME_COL_NAME = 'Last Name';
 const RECIPIENT_EMAIL_COL_NAME = 'Email';
 const EMAIL_STATUS_COL_NAME = 'Email Status';
-const SCHEDULE_COL_NAME = 'Scheduled Date/Time';
+const SCHEDULE_SENT_COL_NAME = 'Scheduled/Sent Date/Time';
 const SCHEDULE_DATA_COL_NAME = `Schedule Data (Don't Touch)`;
 
 function onOpen() {
@@ -22,26 +22,7 @@ function sendEmails() {
   try {
     const controller = new Controller();
 
-    // Ask for Draft Email Subject
-    controller.askForDraftSubject();
-
-    // Get the draft from Gmail
-    controller.getDraftEmail();
-
-    // Get the data from sheet
-    controller.getDataFromSheet();
-
-    // Parse the data
-    const parsedData = controller.parseData();
-
-    // Find only the unscheduled Emails
-    const unscheduledEmailRows = parsedData.filter((row) => !row.isScheduled);
-
-    // Find only unsent Emails
-    const unsentEmailRows = unscheduledEmailRows.filter((row) => !row.isSent);
-
-    // Send Emails
-    unsentEmailRows.forEach(controller.sendEmail);
+    controller.init();
   } catch (e) {
     throw new Error(e);
   }
@@ -81,6 +62,32 @@ class Controller {
     this.gmail = GmailApp;
 
     this.sendEmail = this.sendEmail.bind(this);
+  }
+
+  init() {
+    // Ask for Draft Email Subject
+    this.askForDraftSubject();
+
+    // Get the draft from Gmail
+    this.getDraftEmail();
+
+    // Get the data from sheet
+    this.getDataFromSheet();
+
+    // Parse the data
+    this.parseData();
+
+    // Find only the unscheduled Emails
+    this.useOnlyUnscheduledEmailRows();
+
+    // Find only unsent Emails
+    this.useOnlyUnsentEmailRows();
+
+    // Add the required data to the template
+    this.fillInDraftTemplatesFromData();
+
+    // Send Emails
+    this.rowsToUse.forEach(this.sendEmail);
   }
 
   askForDraftSubject(): void {
@@ -130,8 +137,8 @@ class Controller {
       email: row[RECIPIENT_EMAIL_COL_NAME].trim(),
       emailStatus: row[EMAIL_STATUS_COL_NAME].trim(),
       isSent: row[EMAIL_STATUS_COL_NAME].trim() === EmailStatus.Sent,
-      isScheduled: !!row[SCHEDULE_COL_NAME].trim(),
-      scheduledDateTime: new Date(row[SCHEDULE_COL_NAME].trim()),
+      isScheduled: !!row[SCHEDULE_SENT_COL_NAME].trim(),
+      scheduledDateTime: new Date(row[SCHEDULE_SENT_COL_NAME].trim()),
       scheduleData: row[SCHEDULE_DATA_COL_NAME],
       hasScheduleData: !!row[SCHEDULE_DATA_COL_NAME],
       filledTemplate: this.draftTemplate,
@@ -142,7 +149,8 @@ class Controller {
       lastName: this.sheetData.headerRow.indexOf(LAST_NAME_COL_NAME) + 1,
       email: this.sheetData.headerRow.indexOf(RECIPIENT_EMAIL_COL_NAME) + 1,
       emailStatus: this.sheetData.headerRow.indexOf(EMAIL_STATUS_COL_NAME) + 1,
-      schedule: this.sheetData.headerRow.indexOf(SCHEDULE_COL_NAME) + 1,
+      scheduleOrSent:
+        this.sheetData.headerRow.indexOf(SCHEDULE_SENT_COL_NAME) + 1,
       scheduleData: this.sheetData.headerRow.indexOf(SCHEDULE_DATA_COL_NAME) + 1,
     };
 
@@ -169,6 +177,14 @@ class Controller {
       htmlBody: templateData.htmlBody,
       attachments: templateData.attachments as any,
     });
+
+    this.sheet
+      .getRange(row.rowNumber, this.columnNumbers.emailStatus)
+      .setValue(EmailStatus.Sent);
+
+    this.sheet
+      .getRange(row.rowNumber, this.columnNumbers.scheduleOrSent)
+      .setValue(new Date());
   }
 
   protected fillInDraftTemplatesFromData() {
@@ -185,9 +201,13 @@ class Controller {
 
     this.rowsToUse.forEach((row) => {
       const templateString = JSON.stringify(row.filledTemplate);
+      const mappedRow = this.sheetData.mappedRows.find(
+        (mappedRow) => mappedRow[RECIPIENT_EMAIL_COL_NAME] === row.email
+      );
 
-      const filledTemplateString = templateString.replace(/{{[^{}]+}}/g, (key) =>
-        escapeData(row.filledTemplate[key.replace(/[{}]+/g, '')] || '')
+      const filledTemplateString = templateString.replace(
+        /{([^{}]+)}/g,
+        (_, key) => escapeData(mappedRow[key] || '')
       );
 
       row.filledTemplate = JSON.parse(filledTemplateString);
@@ -395,6 +415,6 @@ interface ColumnNumbers {
   lastName: number;
   email: number;
   emailStatus: number;
-  schedule: number;
+  scheduleOrSent: number;
   scheduleData: number;
 }
