@@ -132,8 +132,6 @@ class Controller {
   parseData() {
     const parsedData = this.sheetData.mappedRows.map<ParsedRow>((row) => ({
       rowNumber: parseInt(row.rowIndex) + 1,
-      firstName: row[FIRST_NAME_COL_NAME].trim(),
-      lastName: row[LAST_NAME_COL_NAME].trim(),
       email: row[RECIPIENT_EMAIL_COL_NAME].trim(),
       emailStatus: row[EMAIL_STATUS_COL_NAME].trim(),
       isSent: row[EMAIL_STATUS_COL_NAME].trim() === EmailStatus.Sent,
@@ -251,7 +249,7 @@ class ScheduledController extends Controller {
     this.fillInDraftTemplatesFromData();
 
     // Add the template to the sheet
-    this.addTemplateToSheet();
+    this.addTemplateDataToSheet();
 
     // Schedule Emails
     this.createScheduleTriggers();
@@ -268,7 +266,7 @@ class ScheduledController extends Controller {
     this.useRowsWithScheduleDataOnly();
 
     // Get draft data from sheet
-    this.getTemplateFromSheet();
+    this.getTemplateDataFromSheet();
 
     // Find the row for current trigger
     const rowToUse = this.rowsToUse.find(
@@ -303,7 +301,7 @@ class ScheduledController extends Controller {
     this.rowsToUse = this.rowsToUse.filter((row) => row.scheduledDateTime > now);
   }
 
-  protected addTemplateToSheet() {
+  protected addTemplateDataToSheet() {
     const draftTemplateString = JSON.stringify(this.draftTemplate);
 
     this.rowsToUse.forEach((row, i) => {
@@ -313,7 +311,7 @@ class ScheduledController extends Controller {
     });
   }
 
-  protected getTemplateFromSheet() {
+  protected getTemplateDataFromSheet() {
     this.rowsToUse = this.rowsToUse.map((row) => {
       const templateData = this.sheet
         .getRange(row.rowNumber, this.columnNumbers.scheduleData)
@@ -385,8 +383,6 @@ type MappedRow = {
 
 type ParsedRow = {
   rowNumber: number;
-  firstName: string;
-  lastName: string;
   email: string;
   scheduledDateTime: Date;
   emailStatus: string;
