@@ -197,6 +197,7 @@ class Controller {
 
     this.rowsToUse.forEach((row) => {
       const templateString = JSON.stringify(row.filledTemplate);
+
       const mappedRow = this.sheetData.mappedRows.find(
         (mappedRow) => mappedRow[RECIPIENT_EMAIL_COL_NAME] === row.email
       );
@@ -300,12 +301,12 @@ class ScheduledController extends Controller {
   }
 
   protected addTemplateDataToSheet() {
-    const draftTemplateString = JSON.stringify(this.draftTemplate);
-
     this.rowsToUse.forEach((row, i) => {
+      const rowScheduleData = JSON.stringify(row.filledTemplate);
+
       this.sheet
         .getRange(row.rowNumber, this.columnNumbers.scheduleData)
-        .setValue(draftTemplateString);
+        .setValue(rowScheduleData);
     });
   }
 
