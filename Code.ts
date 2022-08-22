@@ -48,7 +48,7 @@ class Controller {
   protected sheet: GoogleAppsScript.Spreadsheet.Sheet;
   protected gmail: GoogleAppsScript.Gmail.GmailApp;
 
-  protected subjectline: string;
+  protected subjectLine: string;
   protected sheetData: SheetData;
   protected draftTemplate: DraftTemplate;
 
@@ -100,14 +100,14 @@ class Controller {
     if (subjectLine === 'cancel' || subjectLine === '')
       throw 'Please provide a subject line';
 
-    this.subjectline = subjectLine;
+    this.subjectLine = subjectLine;
   }
 
   getDraftEmail() {
     const drafts = this.gmail.getDrafts();
 
     const draftToUse = drafts.find(
-      (draft) => draft.getMessage().getSubject() === this.subjectline
+      (draft) => draft.getMessage().getSubject() === this.subjectLine
     );
 
     if (!draftToUse) throw 'No Gmail draft with that subject found';
@@ -202,13 +202,29 @@ class Controller {
         (mappedRow) => mappedRow[RECIPIENT_EMAIL_COL_NAME] === row.email
       );
 
-      const filledTemplateString = templateString.replace(
+      const templateStringWithoutBraces =
+        this.removeEnclosingBracesFromStr(templateString);
+
+      const filledTemplateString = templateStringWithoutBraces.replace(
         /{([^{}]+)}/g,
         (_, key) => escapeData(mappedRow[key] || '')
       );
 
-      row.filledTemplate = JSON.parse(filledTemplateString);
+      const filledTemplateStringWithBraces = `{${filledTemplateString}}`;
+
+      row.filledTemplate = JSON.parse(filledTemplateStringWithBraces);
     });
+  }
+
+  private removeEnclosingBracesFromStr(str: string): string {
+    let strWithoutBraces = str;
+
+    if (strWithoutBraces.startsWith('{'))
+      strWithoutBraces = strWithoutBraces.slice(1);
+    if (strWithoutBraces.endsWith('}'))
+      strWithoutBraces = strWithoutBraces.slice(0, -1);
+
+    return strWithoutBraces;
   }
 }
 
